@@ -43,13 +43,54 @@ A 9-step pipeline for generating occupational task questions, running LLM agent 
 
 #### Agent Mode Toggles (Step 5)
 
-```bash
-# Multi-turn with virtual tools (default)
-python step5_agent.py --mode multi --tools virtual --input_file ...
+`step5_agent.py` has two orthogonal toggles:
 
-# Single-turn with real MCP servers
-python step5_agent.py --mode single --tools real --input_file ...
+- **`--mode single | multi`** — single-turn (one user prompt → one agent response) or
+  multi-turn (alternating Student–User loop up to `--user_max_turns` rounds).
+- **`--tools virtual | real`** — simulate tool calls via an LLM (`VirtualToolBackend`)
+  or actually call live Smithery MCP servers.
+
+```bash
+# Defaults: multi-turn + virtual tools (no external dependencies beyond OpenRouter)
+python step5_agent.py --input_file ...
+
+# Single-turn + virtual tools
+python step5_agent.py --mode single --tools virtual --input_file ...
+
+# Multi-turn + real MCP servers (see "Using real MCP servers" below)
+python step5_agent.py --mode multi --tools real --input_file ...
 ```
+
+##### Using real MCP servers (`--tools real`)
+
+Real mode connects to live Smithery-hosted MCP servers via streamable HTTP.
+You'll need:
+
+1. **A Smithery account and API key(s)** — sign up at [smithery.ai](https://smithery.ai/),
+   then copy your API key from the dashboard. Multiple keys are supported and
+   rotated across workers for higher throughput.
+
+2. **A `benchmark/smithery_api_pool.json` file** — based on
+   `smithery_api_pool.json.example`, populate it with one or more keys:
+   ```json
+   [
+     {"name": "pool-key-1", "api_key": "sk-..."},
+     {"name": "pool-key-2", "api_key": "sk-..."}
+   ]
+   ```
+   This file is gitignored. Never commit real keys.
+
+3. **Unzipped MCP server metadata** — `benchmark/step5_agent.py` reads from
+   `mcp_servers/smithery_mcp_servers_0210/` to know which servers/tools each
+   question targets. Make sure you've unzipped it (see Setup below).
+
+4. **Network access** — the agent opens streamable-HTTP connections to each
+   server's `deploymentUrl` (read from its metadata JSON). Some Smithery-hosted
+   servers are rate-limited or region-gated; individual failures are logged
+   per-item and don't abort the run.
+
+With these in place, `--tools real` behaves like `--tools virtual` but the
+tool responses come from live servers instead of a simulating LLM.
 
 #### Eval Dimensions (Step 6)
 
