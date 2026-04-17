@@ -1,0 +1,66 @@
+[
+    {
+        "occupation_title": "Computer Programmers",
+        "occupation_code": "15-1251.00"
+    },
+    {
+        "occupation_title": "Data Scientists",
+        "occupation_code": "15-2051.00"
+    },
+    {
+        "occupation_title": "Business Intelligence Analysts",
+        "occupation_code": "15-2051.01"
+    },
+    {
+        "occupation_title": "Clinical Data Managers",
+        "occupation_code": "15-2051.02"
+    },
+    {
+        "occupation_title": "Intelligence Analysts",
+        "occupation_code": "33-3021.06"
+    },
+    {
+        "occupation_title": "Economists",
+        "occupation_code": "19-3011.00"
+    },
+    {
+        "occupation_title": "News Analysts, Reporters, and Journalists",
+        "occupation_code": "27-3023.00"
+    },
+    {
+        "occupation_title": "Editors",
+        "occupation_code": "27-3041.00"
+    },
+    {
+        "occupation_title": "Poets, Lyricists and Creative Writers",
+        "occupation_code": "27-3043.05"
+    },
+    {
+        "occupation_title": "Interpreters and Translators",
+        "occupation_code": "27-3091.00"
+    },
+    {
+        "occupation_title": "Graphic Designers",
+        "occupation_code": "27-1024.00"
+    },
+    {
+        "occupation_title": "Personal Financial Advisors",
+        "occupation_code": "13-2052.00"
+    },
+    {
+        "occupation_title": "Human Resources Specialists",
+        "occupation_code": "13-1071.00"
+    },
+    {
+        "occupation_title": "Search Marketing Strategists",
+        "occupation_code": "13-1161.01"
+    },
+    {
+        "occupation_title": "Medical Secretaries and Administrative Assistants",
+        "occupation_code": "43-6013.00"
+    },
+    {
+        "occupation_title": "Computer User Support Specialists",
+        "occupation_code": "15-1232.00"
+    }
+]

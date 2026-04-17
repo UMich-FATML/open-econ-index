@@ -1,0 +1,41 @@
+# Environment and secrets
+.env
+*.env
+smithery_api_pool.json
+
+# Large data files (upload to HuggingFace)
+summaries2tasks.json
+summaries2tasks-filtered.json
+
+# Unzipped MCP servers (commit the .zip, not the unpacked dir)
+mcp_servers/smithery_mcp_servers_0210/
+
+# Temp upload script (run manually, do not commit)
+upload_dataset.py
+HUGGINGFACE_README.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime artifacts
+data/
+!data/.gitkeep
+!data/selected_ai_occupations.json
+checkpoints/
+*.pid
+*.log
+
+# Embedding caches
+*.parquet
+
+# Conda
+.conda/
