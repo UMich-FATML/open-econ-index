@@ -27,38 +27,40 @@ usage). Loads the dataset directly from HuggingFace.
 
 ### `benchmark/` — Full Evaluation Pipeline
 
-A 9-step pipeline for generating occupational task questions, running LLM agent trajectories, and evaluating them across 5 dimensions.
+An 8-stage pipeline that generates occupational task questions, runs LLM agent
+trajectories, and evaluates them across 5 dimensions. Numbered `stepN_…` files
+are pipeline stages; the agent / virtual-tool / structured-completion / eval
+endpoints are reusable components those stages call.
 
-| Step | Script | Description |
-|------|--------|-------------|
+| Stage | Script | Description |
+|-------|--------|-------------|
 | 1 | `step1_generate_questions.py` / `step1_hero_generate.py` | Generate question prompts from O\*NET tasks |
-| 2 | `step2_structured_completion.py` | Run structured LLM completions |
+| 2 | `structured_completion.py` | Run structured LLM completions |
 | 3 | `step3_process_completion.py` | Process and deduplicate completions |
 | 4 | `step4_validate_and_convert.py` | Validate and convert to agent-ready format |
-| 5 | `step5_agent.py` | Generate agent trajectories |
+| 5 | `agent.py` | Generate agent trajectories (uses `virtual_tools.py` when `--tools virtual`) |
 | 6 | `step6_prepare_eval.py` | Prepare evaluation prompts (all dimensions) |
-| 7 | `step7_eval_completion.sh` / `step7_eval_endpoint.py` | Run LLM judge evaluation |
+| 7 | `step7_eval_completion.sh` | Run LLM judge evaluation (calls `eval_endpoint.py` per dimension) |
 | 8 | `step8_process_eval_scores.py` / `step8_aggregate_eval_scores.py` | Process and aggregate scores |
-| 9 | `step9_build_leaderboard.py` | Build leaderboard |
 
-#### Agent Mode Toggles (Step 5)
+#### Agent Mode Toggles (Stage 5)
 
-`step5_agent.py` has two orthogonal toggles:
+`agent.py` has two orthogonal toggles:
 
 - **`--mode single | multi`** — single-turn (one user prompt → one agent response) or
   multi-turn (alternating Student–User loop up to `--user_max_turns` rounds).
-- **`--tools virtual | real`** — simulate tool calls via an LLM (`VirtualToolBackend`)
+- **`--tools virtual | real`** — simulate tool calls via an LLM (`virtual_tools.VirtualToolBackend`)
   or actually call live Smithery MCP servers.
 
 ```bash
-# Defaults: multi-turn + virtual tools (no external dependencies beyond OpenRouter)
-python step5_agent.py --input_file ...
+# Defaults: multi-turn + virtual tools (no external dependencies beyond an LLM API)
+python agent.py --input_file ...
 
 # Single-turn + virtual tools
-python step5_agent.py --mode single --tools virtual --input_file ...
+python agent.py --mode single --tools virtual --input_file ...
 
 # Multi-turn + real MCP servers (see "Using real MCP servers" below)
-python step5_agent.py --mode multi --tools real --input_file ...
+python agent.py --mode multi --tools real --input_file ...
 ```
 
 ##### Using real MCP servers (`--tools real`)
@@ -80,7 +82,7 @@ You'll need:
    ```
    This file is gitignored. Never commit real keys.
 
-3. **Unzipped MCP server metadata** — `benchmark/step5_agent.py` reads from
+3. **Unzipped MCP server metadata** — `benchmark/agent.py` reads from
    `mcp_servers/smithery_mcp_servers_0210/` to know which servers/tools each
    question targets. Make sure you've unzipped it (see Setup below).
 
@@ -91,6 +93,65 @@ You'll need:
 
 With these in place, `--tools real` behaves like `--tools virtual` but the
 tool responses come from live servers instead of a simulating LLM.
+
+#### Choosing the LLM Backend (OpenRouter vs. local vLLM)
+
+Three pipeline stages call an LLM: stage 2 (`structured_completion.py`),
+stage 5 (`agent.py`), and stage 7 (`eval_endpoint.py`, invoked by
+`step7_eval_completion.sh`). All three accept the same toggle pattern: an
+`--engine` choice plus a `--base_url` / `--api_key` pair.
+
+**OpenRouter (hosted models, no local GPU required):**
+
+```bash
+# Stage 2
+python structured_completion.py \
+  --model_name moonshotai/kimi-k2.5 \
+  --engine openrouter_api \
+  --openrouter_api_key "$OPENROUTER_API_KEY" \
+  --input_file ...
+
+# Stage 5
+python agent.py \
+  --model_path moonshotai/kimi-k2.5 \
+  --base_url https://openrouter.ai/api/v1 \
+  --api_key "$OPENROUTER_API_KEY" \
+  --input_file ...
+
+# Stage 7 (via shell wrapper)
+bash step7_eval_completion.sh \
+  --input_file ... \
+  --engine openrouter_api \
+  --model_path openai/gpt-oss-120b
+```
+
+**Local vLLM (run `vllm serve <model> --port 8000` first):**
+
+```bash
+# Stage 2
+python structured_completion.py \
+  --model_name <local-model> \
+  --engine vllm_api \
+  --base_url http://localhost:8000/v1 \
+  --input_file ...
+
+# Stage 5
+python agent.py \
+  --model_path <local-model> \
+  --base_url http://localhost:8000/v1 \
+  --api_key EMPTY \
+  --input_file ...
+
+# Stage 7 (via shell wrapper)
+bash step7_eval_completion.sh \
+  --input_file ... \
+  --engine vllm_api \
+  --base_url http://localhost:8000/v1 \
+  --model_path <local-model>
+```
+
+`run_pipeline.sh` defaults to OpenRouter; override the relevant flags or env
+vars (`OPENROUTER_URL`, etc.) to switch to vLLM.
 
 #### Eval Dimensions (Step 6)
 
@@ -123,7 +184,7 @@ conda activate oei
 pip install -r requirements.txt
 cp .env.example .env  # fill in your API keys
 
-# Unzip MCP server definitions (required for benchmark/step5_agent.py)
+# Unzip MCP server definitions (required for benchmark/agent.py)
 cd mcp_servers && unzip smithery_mcp_servers_0210.zip && cd ..
 ```
 

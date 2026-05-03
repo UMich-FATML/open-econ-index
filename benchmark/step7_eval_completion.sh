@@ -22,6 +22,7 @@ input_file=""
 dimensions="all"
 model_path="openai/gpt-oss-120b"
 engine="openrouter_api"
+base_url=""
 max_tokens=4096
 multi_turn="false"
 concurrency=50
@@ -40,6 +41,7 @@ while [[ $# -gt 0 ]]; do
         --dimensions)  dimensions="$2";  shift 2 ;;
         --model_path)  model_path="$2";  shift 2 ;;
         --engine)      engine="$2";      shift 2 ;;
+        --base_url)    base_url="$2";    shift 2 ;;
         --max_tokens)  max_tokens="$2";  shift 2 ;;
         --multi_turn)  multi_turn="$2";  shift 2 ;;
         --concurrency) concurrency="$2"; shift 2 ;;
@@ -52,7 +54,7 @@ done
 
 if [ -z "$input_file" ]; then
     echo -e "${RED}Error: --input_file is required.${NC}"
-    echo "Usage: bash step7_eval_completion.sh --input_file <path.jsonl> [--dimensions all] [--model_path ...] [--engine openrouter_api] [--multi_turn false]"
+    echo "Usage: bash step7_eval_completion.sh --input_file <path.jsonl> [--dimensions all] [--model_path ...] [--engine openrouter_api|vllm_api|openai] [--base_url URL] [--multi_turn false]"
     exit 1
 fi
 
@@ -79,8 +81,8 @@ echo -e "  Engine:      ${engine}"
 echo -e "  Concurrency: ${concurrency}"
 echo ""
 
-if [ "$engine" != "openai" ] && [ "$engine" != "openrouter_api" ]; then
-    echo -e "${RED}Error: Only 'openai' and 'openrouter_api' engines are supported.${NC}"
+if [ "$engine" != "openai" ] && [ "$engine" != "openrouter_api" ] && [ "$engine" != "vllm_api" ]; then
+    echo -e "${RED}Error: Engine must be one of: openai, openrouter_api, vllm_api.${NC}"
     exit 1
 fi
 
@@ -98,13 +100,17 @@ for dim in "${DIM_ARRAY[@]}"; do
     echo -e "${BLUE}[Step 7] Running evaluation for dimension: ${dim}${NC}"
     echo -e "  Input: ${prepared_input_file}"
 
-    python step7_eval_endpoint.py \
-        --input_file "${prepared_input_file}" \
-        --model_path "${model_path}" \
-        --engine "${engine}" \
-        --step "eval_${dim}" \
-        --max_tokens ${max_tokens} \
-        --concurrency ${concurrency}
+    eval_cmd=(python eval_endpoint.py
+        --input_file "${prepared_input_file}"
+        --model_path "${model_path}"
+        --engine "${engine}"
+        --step "eval_${dim}"
+        --max_tokens "${max_tokens}"
+        --concurrency "${concurrency}")
+    if [ -n "${base_url}" ]; then
+        eval_cmd+=(--base_url "${base_url}")
+    fi
+    "${eval_cmd[@]}"
 
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}[Step 7] Completed: ${dim}${NC}"

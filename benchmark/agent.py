@@ -29,7 +29,7 @@ import concurrent.futures
 from glob import glob
 from time import sleep, time
 from tqdm import tqdm
-from step5_virtual_tools import VirtualToolBackend, create_dynamic_virtual_tool
+from virtual_tools import VirtualToolBackend, create_dynamic_virtual_tool
 from wrapt_timeout_decorator import timeout as wrapt_timeout
 
 from utils import (

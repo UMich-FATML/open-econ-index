@@ -25,15 +25,17 @@ from utils import (
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Async Eval Completion Endpoint (OpenAI / OpenRouter)")
+    parser = argparse.ArgumentParser(description="Async Eval Completion Endpoint (OpenAI / OpenRouter / local vLLM)")
     parser.add_argument("--model_path", type=str, required=True, help="Model name (e.g. openai/gpt-4o-mini)")
     parser.add_argument("--input_file", type=str, required=True, help="Input prepared file (.jsonl or .json)")
     parser.add_argument("--engine", type=str, default="openrouter_api",
-                        choices=["openai", "openrouter_api"], help="API engine to use.")
+                        choices=["openai", "openrouter_api", "vllm_api"], help="API engine to use.")
     parser.add_argument("--concurrency", type=int, default=50, help="Max parallel requests.")
     parser.add_argument("--max_tokens", type=int, default=4096, help="Max output tokens.")
     parser.add_argument("--temperature", type=float, default=1.0, help="Sampling temperature.")
     parser.add_argument("--top_p", type=float, default=1.0, help="Top-p sampling.")
+    parser.add_argument("--base_url", type=str, default="http://localhost:8000/v1",
+                        help="Base URL for vllm_api engine (must end with /v1). Ignored for openai/openrouter.")
     parser.add_argument("--openrouter_url", type=str, default="https://openrouter.ai/api/v1",
                         help="OpenRouter API URL.")
     parser.add_argument("--openrouter_api_key", type=str, default="",
@@ -53,7 +55,7 @@ if not args.input_file.endswith("prepared.jsonl") and not args.input_file.endswi
 if args.concurrency <= 0:
     raise ValueError("--concurrency must be a positive integer.")
 
-# Resolve API credentials
+# Resolve API credentials and base URL based on engine
 if args.engine == "openrouter_api":
     _resolved_api_key = args.openrouter_api_key or os.getenv("OPENROUTER_API_KEY", "")
     if not _resolved_api_key:
@@ -62,7 +64,13 @@ if args.engine == "openrouter_api":
             "Provide --openrouter_api_key or set OPENROUTER_API_KEY env var."
         )
     _resolved_base_url = args.openrouter_url.rstrip("/")
-else:
+elif args.engine == "vllm_api":
+    _base_url = args.base_url.rstrip("/")
+    if not _base_url.endswith("/v1"):
+        raise ValueError("--base_url must end with /v1 for vllm_api engine.")
+    _resolved_base_url = _base_url
+    _resolved_api_key = "EMPTY"
+else:  # openai
     _resolved_api_key = args.openai_api_key or os.getenv("OPENAI_API_KEY", "")
     if not _resolved_api_key:
         raise ValueError(

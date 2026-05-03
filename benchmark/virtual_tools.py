@@ -152,7 +152,7 @@ class VirtualToolBackend:
     def build_tool_simulation_request(self, tool_doc: Dict, tool_args: Dict,
                                       scenario_context: Optional[Dict] = None) -> str:
         """Render the user message template for a single tool simulation request."""
-        template = load_prompt_template('./prompts/virtual_toucan.md')
+        template = load_prompt_template('./prompts/virtual_tool_simulator.md')
 
         tool_name = tool_doc.get("name", "")
         tool_description = tool_doc.get("description", "")

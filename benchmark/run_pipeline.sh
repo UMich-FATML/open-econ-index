@@ -55,11 +55,9 @@ if [ -n "${2:-}" ] && [ "${2}" != "${JUDGE_MODEL}" ]; then
     echo "Warning: judge model is fixed to ${JUDGE_MODEL}; ignoring provided value: ${2}"
 fi
 
-# Resolve Python executable (override-able).
+# Resolve Python executable (override-able with PYTHON_BIN env var).
 if [ -n "${PYTHON_BIN:-}" ]; then
     :
-elif [ -x "/Users/smrstep/miniconda3/envs/toucan/bin/python" ]; then
-    PYTHON_BIN="/Users/smrstep/miniconda3/envs/toucan/bin/python"
 elif command -v python >/dev/null 2>&1; then
     PYTHON_BIN="python"
 elif command -v python3 >/dev/null 2>&1; then
@@ -92,10 +90,11 @@ if [ -z "${OPENROUTER_API_KEY}" ]; then
     exit 1
 fi
 
-DEFAULT_BASE_PREPARED="$(ls -t ../data/GPT5-2run/Toucan/data/hero_run_v1/processed/*_validated_prepared.jsonl 2>/dev/null | head -n 1 || true)"
+DEFAULT_BASE_PREPARED="$(ls -t ../data/*/processed/*_validated_prepared.jsonl 2>/dev/null | head -n 1 || true)"
 BASE_PREPARED_FILE="${BASE_PREPARED_FILE:-${DEFAULT_BASE_PREPARED}}"
 if [ -z "${BASE_PREPARED_FILE}" ] || [ ! -f "${BASE_PREPARED_FILE}" ]; then
     echo "Error: BASE_PREPARED_FILE not found: ${BASE_PREPARED_FILE}"
+    echo "Set BASE_PREPARED_FILE env var or run steps 1-4 first to generate one."
     exit 1
 fi
 
@@ -187,7 +186,7 @@ echo "=================================================="
 
 # --- Step 5: Agent Trajectory Generation ---
 step5_cmd=(
-    "${PYTHON_BIN}" step5_agent.py
+    "${PYTHON_BIN}" agent.py
     --input_file "${input_file}"
     --model_path "${CANDIDATE_MODEL}"
     --virtual_tool_model "${VIRTUAL_TOOL_MODEL}"
