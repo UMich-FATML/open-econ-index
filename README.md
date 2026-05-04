@@ -6,12 +6,29 @@ A benchmark for evaluating LLM agents on occupational tasks, built on the O\*NET
 
 ### `chat_index/` — Chat-to-O\*NET Task Mapping
 
-Maps conversations from the [WildEnglishChats-1.6M](https://huggingface.co/datasets/umich-fatml/WildEnglishChats-1.6M) dataset to O\*NET occupational tasks using Qwen3-Embedding semantic search.
+Two-stage mapping of conversations from [WildEnglishChats-1.6M](https://huggingface.co/datasets/umich-fatml/WildEnglishChats-1.6M)
+onto O\*NET occupational tasks:
+
+1. **Embedding retrieval** — `map_summaries_to_tasks.py` embeds conversation
+   summaries with Qwen3-Embedding and assigns the top-k closest O\*NET tasks
+   by cosine similarity. Output: `summaries2tasks.json` (unfiltered, top-3 per chat).
+2. **LLM filtering** — `filter_tasks.py` asks an LLM (via OpenRouter) which of
+   the candidate tasks are genuinely represented by the conversation, dropping
+   spurious matches. Output: `summaries2tasks-filtered.json`.
 
 ```bash
 cd chat_index
+
+# Stage 1: embedding-based candidate retrieval
 python map_summaries_to_tasks.py --top_k 3
+
+# Stage 2: LLM filtering (requires OPENROUTER_API_KEY)
+export OPENROUTER_API_KEY="your-key"
+python filter_tasks.py --model meta-llama/llama-3.1-8b-instruct
 ```
+
+`filter_tasks.py` defaults to US-only conversations (uses `us-hash.json`).
+Pass `--no_us_filter` to process all chats, `--limit N` for a quick test.
 
 The combined dataset (WildChat conversations + O\*NET task mappings, including stable
 task IDs) is available on HuggingFace as `umich-fatml/OpenEconIndex`.
