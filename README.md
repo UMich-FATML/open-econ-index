@@ -6,8 +6,8 @@ A benchmark for evaluating LLM agents on occupational tasks, built on the O\*NET
 
 ### `chat_index/` — Chat-to-O\*NET Task Mapping
 
-Two-stage mapping of conversations from [WildEnglishChats-1.6M](https://huggingface.co/datasets/umich-fatml/WildEnglishChats-1.6M)
-onto O\*NET occupational tasks:
+Two-stage mapping of conversations from the WildChat dataset
+onto O\*NET occupational tasks. The index is stored [here](https://huggingface.co/datasets/umich-fatml/OpenEconIndex).
 
 1. **Embedding retrieval** — `map_summaries_to_tasks.py` embeds conversation
    summaries with Qwen3-Embedding and assigns the top-k closest O\*NET tasks
